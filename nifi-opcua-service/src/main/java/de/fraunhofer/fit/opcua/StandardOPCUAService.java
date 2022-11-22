@@ -259,9 +259,7 @@ public class StandardOPCUAService extends AbstractControllerService implements O
         }
 
         try {
-            EndpointDescription[] endpoints =
-                    UaTcpStackClient.getEndpoints(endpoint).get();
-
+            EndpointDescription[] endpoints = UaTcpStackClient.getEndpoints(endpoint).get();
             EndpointDescription endpointDescription = chooseEndpoint(endpoints, minSecurityPolicy, minSecurityMode);
 
             if (endpointDescription == null) {
@@ -286,14 +284,16 @@ public class StandardOPCUAService extends AbstractControllerService implements O
             // instead of using the discovered URL. Useful when client is visiting the server through
             // some NAT or SSH tunneling, and the discovered URL is not reachable.
             if (context.getProperty(USE_PROXY).asBoolean()) {
-                endpointDescription = new EndpointDescription(endpoint,
+                endpointDescription = new EndpointDescription(
+                        endpoint,
                         endpointDescription.getServer(),
                         endpointDescription.getServerCertificate(),
                         endpointDescription.getSecurityMode(),
                         endpointDescription.getSecurityPolicyUri(),
                         endpointDescription.getUserIdentityTokens(),
                         endpointDescription.getTransportProfileUri(),
-                        endpointDescription.getSecurityLevel());
+                        endpointDescription.getSecurityLevel()
+                );
             }
 
             cfgBuilder.setEndpoint(endpointDescription);
@@ -477,6 +477,25 @@ public class StandardOPCUAService extends AbstractControllerService implements O
             }
         }
 
+    }
+
+    @Override
+    public void putValues(Map<String, String> keyValuePairs) throws ProcessException {
+        if (opcClient == null) {
+            throw new ProcessException("OPC Client is null. OPC UA service was not enabled properly.");
+        }
+
+        try {
+            for(Map.Entry<String, String> entry : keyValuePairs.entrySet()){
+                // Identify the node
+                NodeId nodeId = NodeId.parse(entry.getKey());
+                //TODO
+
+            }
+
+        } catch (Exception e) {
+            throw new ProcessException(e.getMessage());
+        }
     }
 
     @Override

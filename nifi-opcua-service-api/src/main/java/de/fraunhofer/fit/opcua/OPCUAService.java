@@ -22,11 +22,14 @@ import org.apache.nifi.controller.ControllerService;
 import org.apache.nifi.processor.exception.ProcessException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
 @Tags({"example"})
 @CapabilityDescription("Example Service API.")
 public interface OPCUAService extends ControllerService {
+
+    void putValues(Map<String, String> keyValuePairs) throws ProcessException;
 
     byte[] getValue(List<String> reqTagNames, String returnTimestamp, boolean excludeNullValue,
                     String nullValueString) throws ProcessException;
