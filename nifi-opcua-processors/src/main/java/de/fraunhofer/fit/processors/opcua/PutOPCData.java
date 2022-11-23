@@ -119,14 +119,15 @@ public class PutOPCData extends AbstractProcessor {
                         Map<String, String> keyValuePairs = new HashMap<String, String>();
                         for(String data : dataPoints){
                             String[] kv = data.split(processContext.getProperty(DELIMITER_CHARACTER).toString());
-                            if(kv.length == 2)
-                                keyValuePairs.put(kv[0], kv[1]);
+                            if(kv.length == 3)
+                                keyValuePairs.put(kv[0] + ";" + kv[1], kv[2]); // Canonical form for Node Id is: 'ns=123;i=42'
                             else
-                                throw new Exception("Exactly 2 values are required for Node Id and Node Value, separated by 'delimiter characters'. Found " + kv.length);
+                                throw new ProcessException("Exactly 3 values are required: namespace index, node identifier and node value, all separated by the chosen 'delimiter characters'. Found " + kv.length + " instead.");
                         }
                         // If parsing was successful, then continue with writing values to OPC UA service
                         opcUAService.putValues(keyValuePairs);
-                    } catch (Exception e) {
+                    } catch (ProcessException e) {
+                        // TODO ProcessException should be thrown only by the OPC UA Service, so we can use either yield or penalize...
                         getLogger().error("Failed to process FlowFile: " + e.getMessage());
                     }
                 });

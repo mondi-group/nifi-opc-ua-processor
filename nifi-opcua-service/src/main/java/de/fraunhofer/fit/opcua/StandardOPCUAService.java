@@ -37,6 +37,7 @@ import org.eclipse.milo.opcua.sdk.client.api.nodes.Node;
 import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaMonitoredItem;
 import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaSubscription;
 import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaSubscriptionManager;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.stack.client.UaTcpStackClient;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.Identifiers;
@@ -56,10 +57,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
@@ -487,9 +485,19 @@ public class StandardOPCUAService extends AbstractControllerService implements O
 
         try {
             for(Map.Entry<String, String> entry : keyValuePairs.entrySet()){
-                // Identify the node
+                // Identify the node. We expect a string containing: 'ns=123;i=42'
                 NodeId nodeId = NodeId.parse(entry.getKey());
-                //TODO
+                // Create the data point. Data Type should be handled automatically by the NodeId object
+                Variant v = new Variant(entry.getValue());
+                DataValue dv = new DataValue(v, StatusCode.GOOD, DateTime.now());
+                // Write async
+                CompletableFuture<StatusCode> status = opcClient.writeValue(nodeId, dv);
+                // block for the result to write data in order of reception
+                if(status.get().isBad())
+                    throw new ProcessException("OPC Client failed trying to write " + entry.getValue() + " for node: " + entry.getKey());
+
+                // Write sync...
+                //opcClient.getAddressSpace().getVariableNode(nodeId).get().writeValue(dv);
 
             }
 
