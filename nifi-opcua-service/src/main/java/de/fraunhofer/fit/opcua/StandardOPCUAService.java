@@ -25,6 +25,7 @@ import org.apache.nifi.components.Validator;
 import org.apache.nifi.controller.AbstractControllerService;
 import org.apache.nifi.controller.ConfigurationContext;
 import org.apache.nifi.expression.ExpressionLanguageScope;
+import org.apache.nifi.logging.ComponentLog;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.reporting.InitializationException;
@@ -37,7 +38,6 @@ import org.eclipse.milo.opcua.sdk.client.api.nodes.Node;
 import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaMonitoredItem;
 import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaSubscription;
 import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaSubscriptionManager;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.stack.client.UaTcpStackClient;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.Identifiers;
@@ -45,10 +45,7 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.DataChangeTrigger;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.*;
 import org.eclipse.milo.opcua.stack.core.types.structured.*;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 
@@ -478,31 +475,50 @@ public class StandardOPCUAService extends AbstractControllerService implements O
     }
 
     @Override
-    public void putValues(Map<String, String> keyValuePairs) throws ProcessException {
+    public void putValues(List<String> values) throws ProcessException {
+        final ComponentLog logger = getLogger();
+
         if (opcClient == null) {
-            throw new ProcessException("OPC Client is null. OPC UA service was not enabled properly.");
+            logger.error("OPC Client is null. OPC UA service was not enabled properly.");
+            throw new ProcessException("OPC Client is null.");
         }
 
         try {
-            for(Map.Entry<String, String> entry : keyValuePairs.entrySet()){
+            for(String entry : values){
+                String[] vals = entry.split(VALUE_SEPARATOR);
+                String node = vals[0] + VALUE_SEPARATOR + vals[1];
+                String val = vals[2];
                 // Identify the node. We expect a string containing: 'ns=123;i=42'
-                NodeId nodeId = NodeId.parse(entry.getKey());
+                NodeId nodeId = NodeId.parse(node);
+                IdType nodeType = nodeId.getType();
                 // Create the data point. Data Type should be handled automatically by the NodeId object
-                Variant v = new Variant(entry.getValue());
+                Variant v;
+                //Object value = val;
+                // If it is a numeric data point, convert the object correctly...
+                if (nodeType == IdType.Numeric){
+                    Double value = Double.parseDouble(val);
+                    v = new Variant(value);
+                }
+                else if (nodeType == IdType.String || nodeType == IdType.Guid){
+                    v = new Variant(val);
+                }
+                else {
+                    // Anything else is a byte representation
+                    v = new Variant(val.getBytes());
+                }
                 DataValue dv = new DataValue(v, StatusCode.GOOD, DateTime.now());
                 // Write async
                 CompletableFuture<StatusCode> status = opcClient.writeValue(nodeId, dv);
-                // block for the result to write data in order of reception
+                // Block for the result to write data in order of reception
                 if(status.get().isBad())
-                    throw new ProcessException("OPC Client failed trying to write " + entry.getValue() + " for node: " + entry.getKey());
+                    throw new ProcessException("Failed to write " + val + " for node: " + node + ". Status " + status.get().toString());
 
                 // Write sync...
                 //opcClient.getAddressSpace().getVariableNode(nodeId).get().writeValue(dv);
-
             }
 
         } catch (Exception e) {
-            throw new ProcessException(e.getMessage());
+            throw new ProcessException(e);
         }
     }
 
