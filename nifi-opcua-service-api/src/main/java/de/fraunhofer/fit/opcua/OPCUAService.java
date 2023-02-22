@@ -30,7 +30,7 @@ public interface OPCUAService extends ControllerService {
 
     public static final String VALUE_SEPARATOR = ";";
 
-    void putValues(List<String> values) throws ProcessException;
+    void putValue(String namespace, String variable, Object value, Boolean withTimestamp) throws ProcessException;
 
     byte[] getValue(List<String> reqTagNames, String returnTimestamp, boolean excludeNullValue,
                     String nullValueString) throws ProcessException;

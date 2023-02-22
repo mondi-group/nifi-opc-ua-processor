@@ -475,7 +475,7 @@ public class StandardOPCUAService extends AbstractControllerService implements O
     }
 
     @Override
-    public void putValues(List<String> values) throws ProcessException {
+    public void putValue(String namespace, String variable, Object value, Boolean withTimestamp) throws ProcessException {
         final ComponentLog logger = getLogger();
 
         if (opcClient == null) {
@@ -484,39 +484,24 @@ public class StandardOPCUAService extends AbstractControllerService implements O
         }
 
         try {
-            for(String entry : values){
-                String[] vals = entry.split(VALUE_SEPARATOR);
-                String node = vals[0] + VALUE_SEPARATOR + vals[1];
-                String val = vals[2];
-                // Identify the node. We expect a string containing: 'ns=123;i=42'
-                NodeId nodeId = NodeId.parse(node);
-                IdType nodeType = nodeId.getType();
-                // Create the data point. Data Type should be handled automatically by the NodeId object
-                Variant v;
-                //Object value = val;
-                // If it is a numeric data point, convert the object correctly...
-                if (nodeType == IdType.Numeric){
-                    Double value = Double.parseDouble(val);
-                    v = new Variant(value);
-                }
-                else if (nodeType == IdType.String || nodeType == IdType.Guid){
-                    v = new Variant(val);
-                }
-                else {
-                    // Anything else is a byte representation
-                    v = new Variant(val.getBytes());
-                }
-                DataValue dv = new DataValue(v, StatusCode.GOOD, DateTime.now());
-                // Write async
-                CompletableFuture<StatusCode> status = opcClient.writeValue(nodeId, dv);
-                // Block for the result to write data in order of reception
-                if(status.get().isBad())
-                    throw new ProcessException("Failed to write " + val + " for node: " + node + ". Status " + status.get().toString());
-
-                // Write sync...
-                //opcClient.getAddressSpace().getVariableNode(nodeId).get().writeValue(dv);
+            String node = namespace + VALUE_SEPARATOR + variable;
+            // Identify the node. We expect a string containing: 'ns=123;i=42'
+            NodeId nodeId = NodeId.parse(node);
+            // Build the value wrapper
+            Variant v = new Variant(value);
+            // Build the data point with or without a timestamp
+            DataValue data;
+            if (withTimestamp){
+                data = new DataValue(v, StatusCode.GOOD);
             }
-
+            else {
+                data = new DataValue(v, StatusCode.GOOD, null, null);
+            }
+            // Write the data point async
+            CompletableFuture<StatusCode> status = opcClient.writeValue(nodeId, data);
+            // Block for the result to write data in order of reception
+            if(status.get().isBad())
+                throw new ProcessException("Failed to write " + value.toString() + " for node: " + node + ". Status " + status.get().toString());
         } catch (Exception e) {
             throw new ProcessException(e);
         }
