@@ -17,7 +17,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>de.fraunhofer.fit</groupId>
+        <groupId>com.mondigroup</groupId>
         <artifactId>nifi-opcua-bundle</artifactId>
         <version>1.0</version>
     </parent>
@@ -35,20 +35,16 @@
 
     <dependencies>
         <dependency>
-            <groupId>de.fraunhofer.fit</groupId>
+            <groupId>com.mondigroup</groupId>
             <artifactId>nifi-opcua-processors</artifactId>
             <version>1.0</version>
         </dependency>
         <dependency>
-            <groupId>de.fraunhofer.fit</groupId>
+            <groupId>com.mondigroup</groupId>
             <artifactId>nifi-opcua-service-api</artifactId>
             <version>1.0</version>
         </dependency>
-        <!--<dependency>
-            <groupId>de.fraunhofer.fit</groupId>
-            <artifactId>nifi-opcua-service</artifactId>
-            <version>1.0</version>
-        </dependency>-->
+        
     </dependencies>
 
 </project>

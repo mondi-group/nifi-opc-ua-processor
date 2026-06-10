@@ -1,0 +1,145 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.mondigroup.nifi_opcua_bundle;
+
+import org.apache.nifi.reporting.InitializationException;
+import org.apache.nifi.util.TestRunner;
+import org.apache.nifi.util.TestRunners;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+
+public class TestStandardOPCUAService {
+
+    private final String endpoint = "opc.tcp://10.9.112.12:30841/nifi/freeopcua/server/";
+    private TestRunner runner;
+    private StandardOPCUAService service;
+
+    @BeforeEach
+    public void init() throws InitializationException {
+        runner = TestRunners.newTestRunner(TestProcessor.class);
+        service = new StandardOPCUAService();
+        runner.addControllerService("test-good", service);
+    }
+
+    @Test
+    public void testServiceInitialization() {
+
+        runner.setProperty(service, StandardOPCUAService.ENDPOINT, endpoint);
+        runner.setProperty(service, StandardOPCUAService.USE_PROXY, Boolean.TRUE.toString());
+        runner.setProperty(service, StandardOPCUAService.PKI_BASE_DIR, "target/opcua-security/pki");
+        runner.assertValid(service);
+
+        runner.enableControllerService(service);
+        runner.disableControllerService(service);
+
+    }
+
+    @Test
+    public void testServiceGetNodes() {
+        runner.setProperty(service, StandardOPCUAService.ENDPOINT, endpoint);
+        runner.setProperty(service, StandardOPCUAService.USE_PROXY, Boolean.TRUE.toString());
+        runner.setProperty(service, StandardOPCUAService.PKI_BASE_DIR, "target/opcua-security/pki");
+        runner.assertValid(service);
+
+        runner.enableControllerService(service);
+
+        System.out.println(new String(service.getNodes("--", 3, 10, false,
+                "ns=2;i=11")));
+
+        runner.disableControllerService(service);
+    }
+
+    @Test
+    public void testServiceGetValues() {
+        runner.setProperty(service, StandardOPCUAService.ENDPOINT, endpoint);
+        runner.setProperty(service, StandardOPCUAService.USE_PROXY, Boolean.TRUE.toString());
+        runner.setProperty(service, StandardOPCUAService.PKI_BASE_DIR, "target/opcua-security/pki");
+        runner.assertValid(service);
+
+        runner.enableControllerService(service);
+
+        List<String> tagList = Arrays.asList("ns=2;i=28");
+
+        byte[] bytes = service.getValue(tagList, "Both", true, "");
+        System.out.println(new String(bytes));
+
+        runner.disableControllerService(service);
+    }
+
+    @Test
+    public void testSecurityAccess() throws IOException {
+
+        runner.setProperty(service, StandardOPCUAService.ENDPOINT, endpoint);
+        runner.setProperty(service, StandardOPCUAService.USE_PROXY, Boolean.TRUE.toString());
+
+        //runner.setProperty(service, StandardOPCUAService.SECURITY_POLICY, "Basic256Sha256");
+        //runner.setProperty(service, StandardOPCUAService.SECURITY_MODE, "SignAndEncrypt");
+        //runner.setProperty(service, StandardOPCUAService.CLIENT_KS_LOCATION, "src/test/resources/client.p12");
+        //runner.setProperty(service, StandardOPCUAService.CLIENT_KS_PASSWORD, "SuperSecret");
+        //runner.setProperty(service, StandardOPCUAService.REQUIRE_SERVER_AUTH, "true");
+        //runner.setProperty(service, StandardOPCUAService.TRUSTSTORE_LOCATION, "src/test/resources/trust.p12");
+        //runner.setProperty(service, StandardOPCUAService.TRUSTSTORE_PASSWORD, "SuperSecret");
+        runner.setProperty(service, StandardOPCUAService.AUTH_POLICY, "Anon");
+        runner.setProperty(service, StandardOPCUAService.PKI_BASE_DIR, "target/opcua-security/pki");
+
+        runner.assertValid(service);
+
+        runner.enableControllerService(service);
+
+        List<String> tagList = Arrays.asList("ns=2;i=11","ns=2;i=28");
+
+        byte[] bytes = service.getValue(tagList, "Both", true, "");
+        System.out.println(new String(bytes));
+
+        runner.disableControllerService(service);
+    }
+
+    @Test
+    public void testUsernameSecurityAccess() {
+        runner.setProperty(service, StandardOPCUAService.ENDPOINT, endpoint);
+        runner.setProperty(service, StandardOPCUAService.USE_PROXY, Boolean.TRUE.toString());
+
+        runner.setProperty(service, StandardOPCUAService.SECURITY_POLICY, "Basic256Sha256");
+        runner.setProperty(service, StandardOPCUAService.SECURITY_MODE, "SignAndEncrypt");
+        runner.setProperty(service, StandardOPCUAService.APPLICATION_URI, "");
+        runner.setProperty(service, StandardOPCUAService.CLIENT_KS_LOCATION, "src/test/resources/client.p12");
+        runner.setProperty(service, StandardOPCUAService.CLIENT_KS_PASSWORD, "SuperSecret");
+        runner.setProperty(service, StandardOPCUAService.REQUIRE_SERVER_AUTH, "true");
+        runner.setProperty(service, StandardOPCUAService.TRUSTSTORE_LOCATION, "src/test/resources/trust.p12");
+        runner.setProperty(service, StandardOPCUAService.TRUSTSTORE_PASSWORD, "SuperSecret");
+
+        runner.setProperty(service, StandardOPCUAService.AUTH_POLICY, "Username");
+        runner.setProperty(service, StandardOPCUAService.USERNAME, "UserA");
+        runner.setProperty(service, StandardOPCUAService.PASSWORD, "password");
+        runner.setProperty(service, StandardOPCUAService.PKI_BASE_DIR, "target/opcua-security/pki");
+
+        runner.assertValid(service);
+
+        runner.enableControllerService(service);
+
+        List<String> tagList = Arrays.asList("ns=2;i=11","ns=2;i=28");
+
+        byte[] bytes = service.getValue(tagList, "Both", true, "");
+        System.out.println(new String(bytes));
+
+        runner.disableControllerService(service);
+    }
+}

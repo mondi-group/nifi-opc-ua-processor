@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-de.fraunhofer.fit.processors.opcua.ListOPCNodes
-de.fraunhofer.fit.processors.opcua.GetOPCData
-de.fraunhofer.fit.processors.opcua.PutOPCData
-de.fraunhofer.fit.processors.opcua.SubscribeOPCNodes
+com.mondigroup.nifi_opcua_bundle.ListOPCNodes
+com.mondigroup.nifi_opcua_bundle.GetOPCData
+com.mondigroup.nifi_opcua_bundle.SubscribeOPCNodes
+com.mondigroup.nifi_opcua_bundle.PutOPCData

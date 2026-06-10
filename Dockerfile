@@ -1,34 +1,40 @@
-# Build the nar file
+# ============================================================
+# Stage 1: Build NAR with Maven (Java 21)
+# ============================================================
+FROM maven:3.9.15-eclipse-temurin-21 AS builder
 
-FROM maven:3.5 as builder
+WORKDIR /build
 
-ARG BASE_DIR=/source
+# Optional: Cache dependencies separately
+COPY pom.xml .
+COPY nifi-opcua-service-api/pom.xml nifi-opcua-service-api/pom.xml
+COPY nifi-opcua-service/pom.xml nifi-opcua-service/pom.xml
+COPY nifi-opcua-processors/pom.xml nifi-opcua-processors/pom.xml
+COPY nifi-opcua-nar/pom.xml nifi-opcua-nar/pom.xml
 
-COPY . ${BASE_DIR}
+RUN mvn -B -q dependency:go-offline -DskipTests
 
-WORKDIR ${BASE_DIR}
+# Copy full source
+COPY . .
 
-RUN mvn clean package -DskipTests
+# Build NAR
+RUN mvn -B clean install -DskipTests
 
 
-# ----------------
-# Build a new Nifi image with the newly generated nar file included
+# ============================================================
+# Stage 2: Runtime Image – Apache NiFi 2.2.8
+# ============================================================
+FROM apache/nifi:2.2.8
 
-FROM apache/nifi:1.4.0
+# Copy custom NAR into NiFi lib directory
+COPY --from=builder \
+  /build/nifi-opcua-nar/target/*.nar \
+  /opt/nifi/nifi-current/lib/
 
-ARG BASE_DIR=/source
+# Optional metadata
+LABEL org.opencontainers.image.title="NiFi OPC-UA Bundle (Mondi Group)"
+LABEL org.opencontainers.image.version="2.2.8"
+LABEL org.opencontainers.image.vendor="Mondi Group"
 
-ENV NIFI_BASE_DIR /opt/nifi
-ENV NIFI_HOME ${NIFI_BASE_DIR}/nifi-1.4.0
-
-COPY --from=builder ${BASE_DIR}/nifi-opcua-nar/target/*.nar ${NIFI_HOME}/lib/nifi-opcua.nar
-
-EXPOSE 8080 8443 10000
-
-USER nifi
-
-WORKDIR ${NIFI_HOME}
-
-# Startup NiFi
-ENTRYPOINT ["bin/nifi.sh"]
-CMD ["run"]
+# NiFi ports (nur Doku)
+EXPOSE 8443 8080

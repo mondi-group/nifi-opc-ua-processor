@@ -1,2 +1,3 @@
-ns=4;s=S71500/ET200MP-Station_2.PLC_1.Programs.MAS_Storage_unit_2_DB.c_dispatch
-ns=4;s=S71500/ET200MP-Station_2.PLC_1.Programs.MAS_Storage_unit_2_DB.Magazine_Unit_4.c_dispatch
+ns=2;i=11
+ns=2;i=3
+ns=2;i=7
