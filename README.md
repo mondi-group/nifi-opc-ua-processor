@@ -25,7 +25,7 @@ modernization and dependency upgrades.
 
 Compared to the original `HashmapInc` and LinkSmart versions, this fork provides:
 
-1. Migration from legacy Eclipse Milo versions to **Eclipse Milo 1.1.1**
+1. Migration from legacy Eclipse Milo versions to **Eclipse Milo 1.1.2**
 2. Updated build and dependency configuration
 3. Internal code refactoring and package namespace changes
 4. Improvements to security, error handling and operational stability
